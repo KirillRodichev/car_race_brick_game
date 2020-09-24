@@ -45,6 +45,23 @@ body {
     padding: 4px;
 }
 
+.game-field--covered {
+    position: relative;
+}
+
+.game-field--covered::after {
+    content: "GAME OVER";
+    background-color: rgba(0,0,0,0.7);
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 40px;
+    font-weight: 700;
+}
+
 .brick {
     position: relative;
     box-shadow: inset 0 0 0 4px #909090;
@@ -75,8 +92,9 @@ body {
     display: grid;
     grid-template-areas:
         "player-info"
-        "general-info";
-    grid-template-rows: repeat(2, 1fr);
+        "general-info"
+        "actions";
+    grid-template-rows: repeat(3, auto);
     grid-gap: 10px;
     height: 100%;
     border-left: 10px solid #464646;
@@ -88,6 +106,10 @@ body {
 
 .side-panel__general-info {
     grid-area: general-info;
+}
+
+.side-panel__actions {
+    grid-area: actions;
 }
 
 .info-box {
@@ -104,64 +126,25 @@ body {
     color: #cdcdcd;
 }
 
-/* MODAL */
-
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgb(0,0,0);
-    background-color: rgba(0,0,0,0.4);
+.button-wrapper {
+    display: flex;
+    justify-content: center;
 }
 
-.modal__content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
+.action-btn {
+    background-color: #fff;
+    color: #000;
+    padding: 15px 30px;
+    text-align: center;
+    font-weight: 700;
+    font-family: 'Roboto', sans-serif;
+    border: 5px solid #c6c6c6;
+    border-left-color: #b0b0b0;
+    border-right-color: #4e4e4e;
+    border-bottom-color: #343434;
 }
 
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.close:hover,
-.close:focus {
-    color: black;
-    text-decoration: none;
+.action-btn:hover {
     cursor: pointer;
-}
-
-.modal__header-wrapper {
-    padding: 2px 16px;
-    background-color: #5cb85c;
-    color: white;
-}
-
-.modal__body {padding: 2px 16px;}
-
-.modal__content {
-    position: relative;
-    background-color: #fefefe;
-    margin: auto;
-    padding: 0;
-    border: 1px solid #888;
-    width: 80%;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-    animation-name: animatetop;
-    animation-duration: 0.4s
-}
-
-@keyframes animatetop {
-    from {top: -300px; opacity: 0}
-    to {top: 0; opacity: 1}
+    background-color: #dbdbdb;
 }

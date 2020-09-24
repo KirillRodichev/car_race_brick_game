@@ -1,17 +1,40 @@
+// numbers
 const BRICKS_NUMBER = 200;
 const BRICKS_IN_ROW = 10;
 const BRICKS_IN_COLUMN = 20;
 const BRICKS_IN_CAR = 7;
+const GOALS = 50;
+const START_SPEED = 500;
+const SPEED_FRACTION = 50;
+const PLAYER_CAR_START_X_COORD = 6;
+const CAR_WIDTH = 3;
+const ENEMY_CAR_START_X_COODR = -3;
+
+// car constants
 const DIRECT_DOWN = 'down';
 const DIRECT_UP = 'up';
 const DRAW = 'draw';
 const ERASE = 'erase';
-const GOALS = 50;
-const START_SPEED = 1000;
-const SPEED_FRACTION = 50;
-const PLAYER_CAR_START_X_COORD = 3;
 
+// action button text
+const PAUSE = 'PAUSE';
+const TRY_AGAIN = 'TRY_AGAIN';
+const CONTINUE = 'CONTINUE';
+
+// game phases
+const INIT_PHASE = 'init';
+const PLAYING_PHASE = 'playing';
+const PAUSE_PHASE = 'paused';
+const DEFEATED_PHASE = 'defeated';
+
+// styling classes
+const GAME_OVER_COVER_CLASS = 'game-field--covered';
+
+// dom elements
 const gameField = document.querySelector('.game-field');
+const actionButton = document.querySelector('.action-btn');
+
+const barrier = [0, 10, 20, 40, 50, 60, 80, 90, 100, 120, 130, 140, 160, 170, 180, 9, 19, 29, 49, 59, 69, 89, 99, 109, 129, 139, 149, 169, 179, 189];
 
 let bricksArray = [];
 
@@ -19,14 +42,14 @@ document.addEventListener('DOMContentLoaded', () => {
   for (let seqNumber = 0; seqNumber < BRICKS_NUMBER; seqNumber++) {
     const brick = document.createElement('div');
     brick.classList.add('brick');
-    brick.innerHTML = `${ seqNumber }`;
+    if (barrier.includes(seqNumber)) {
+      brick.classList.add('brick_active');
+    }
     bricksArray.push(new Brick(brick, seqNumber));
     gameField.appendChild(brick);
   }
 
   let game = new Game();
-
-  let modal = new Modal();
 
   document.addEventListener('keydown', ({ code }) => {
     switch (code) {
@@ -39,7 +62,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  game.addEnemy();
+  actionButton.addEventListener('click', () => {
+    switch (Game.phase) {
+      case PLAYING_PHASE:
+        game.pause();
+        break;
+      case PAUSE_PHASE:
+        game.resume();
+        break;
+      case INIT_PHASE:
+        game.start();
+        break;
+      case DEFEATED_PHASE:
+        game.restart();
+        break;
+    }
+  });
 });
 
 /*
@@ -100,8 +138,8 @@ class Brick extends Rectangle {
   static getSeqNumberByBackCoord(backCoord1) {
     const { x, y } = backCoord1;
     let seqNumber = 0;
-    for (let yCoord = 0; yCoord < y; yCoord++) {
-      seqNumber += BRICKS_IN_ROW;
+    for (let yCoord = 0; yCoord < Math.abs(y); yCoord++) {
+      seqNumber = y >= 0 ? seqNumber + BRICKS_IN_ROW : seqNumber - BRICKS_IN_ROW;
     }
     seqNumber += x;
     return seqNumber;
@@ -188,25 +226,63 @@ class PlayerCar extends Car {
   }
 
   shiftLeft() {
-    if (this.backCoord2.x > 1) {
-      this.eraseCar();
-      this.frontCoord1.x -= 1;
-      this.frontCoord2.x -= 1;
-      this.backCoord1.x -= 1;
-      this.backCoord2.x -= 1;
-      this.drawCar();
+    if (this.backCoord2.x > 2 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
+      if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() - 1)) {
+        this.eraseCar();
+        this.frontCoord1.x -= 1;
+        this.frontCoord2.x -= 1;
+        this.backCoord1.x -= 1;
+        this.backCoord2.x -= 1;
+        this.drawCar();
+      }
     }
   }
 
   shiftRight() {
-    if (this.backCoord1.x < 10) {
-      this.eraseCar();
-      this.frontCoord1.x++;
-      this.frontCoord2.x++;
-      this.backCoord1.x++;
-      this.backCoord2.x++;
-      this.drawCar();
+    if (this.backCoord1.x < 9 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
+      if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() + 1)) {
+        this.eraseCar();
+        this.frontCoord1.x++;
+        this.frontCoord2.x++;
+        this.backCoord1.x++;
+        this.backCoord2.x++;
+        this.drawCar();
+      }
     }
+  }
+
+  getNoseSeqNumber() {
+    return this.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
+  }
+
+  isCarCrashed(enemyCar, noseSeqNumber) {
+    const enemyCarNoseSeqNumber = enemyCar.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
+    const playerCarNoseSeqNumber = noseSeqNumber;
+    for (let horizPos = 0; horizPos < 8; horizPos++) {
+      switch (horizPos) {
+        case 0:
+          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber) {
+            Game.over();
+            return true;
+          }
+          break;
+        case 1:
+          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber + BRICKS_IN_ROW - 1
+            || enemyCarNoseSeqNumber === playerCarNoseSeqNumber + BRICKS_IN_ROW + 1) {
+            Game.over();
+            return true;
+          }
+          break;
+        default:
+          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber + horizPos * BRICKS_IN_ROW - 2
+            || enemyCarNoseSeqNumber === playerCarNoseSeqNumber + horizPos * BRICKS_IN_ROW + 2) {
+            Game.over();
+            return true;
+          }
+          break;
+      }
+    }
+    return false;
   }
 }
 
@@ -229,10 +305,30 @@ class EnemyCar extends Car { // player
       this.drawCar();
     }
   }
+
+  xDist(backCoord1X) {
+    return this.backCoord1.x - backCoord1X;
+  }
+
+  canBeAdded(backCoord1X) {
+    if (Math.abs(this.xDist(backCoord1X)) >= CAR_WIDTH) return true;
+  }
+
+  isCarPassed() {
+    const enemyCarNoseSeqNumber = this.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
+    return Math.floor(enemyCarNoseSeqNumber / 10) > 22;
+  }
+
+  static getRandXBackCoord() {
+    return Math.floor(Math.random() * Math.floor(6)) + 1;
+  }
 }
 
 class Game {
   static enemiesCars = [];
+  static phase = INIT_PHASE;
+  static counter = 0;
+  static speedInterval;
 
   constructor() {
     this.player = new PlayerCar(PLAYER_CAR_START_X_COORD);
@@ -245,53 +341,58 @@ class Game {
       playerScore: 0,
       highScore: 0
     };
-    this.intervalId = setInterval(this.moveEnemies, this.level.speed);
+  }
+
+  start() {
+    this.addEnemy();
+    this.resume();
+  }
+
+  resume() {
+    Game.speedInterval = setInterval(this.moveEnemies.bind(this), this.level.speed);
+    Game.phase = PLAYING_PHASE;
+    actionButton.innerText = PAUSE;
+  }
+
+  pause() {
+    clearInterval(Game.speedInterval);
+    Game.phase = PAUSE_PHASE;
+    actionButton.innerText = CONTINUE;
   }
 
   moveEnemies() {
+    if (this.player.isCarCrashed(Game.enemiesCars[0], this.player.getNoseSeqNumber() - 10)) {
+      return;
+    }
     for (let carInd = 0; carInd < Game.enemiesCars.length; carInd++) {
       Game.enemiesCars[carInd].shiftUp();
-      if (this.isCrashed(Game.enemiesCars[carInd])) {
-        this.over();
-      }
-      if (this.isPassed(Game.enemiesCars[carInd])) {
-        this.incrGoals();
-        Game.enemiesCars.pop();
-        this.addEnemy();
-      }
+      console.log('shifted');
     }
-  }
-
-  isPassed(enemyCar) {
-    const enemyCarNoseSeqNumber = enemyCar.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    const playerCarNoseSeqNumber = this.player.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    return enemyCarNoseSeqNumber / BRICKS_IN_ROW - playerCarNoseSeqNumber / BRICKS_IN_ROW >= 4;
-  }
-
-  isCrashed(enemyCar) {
-    const enemyCarNoseSeqNumber = enemyCar.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    const playerCarNoseSeqNumber = this.player.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    for (let horizPos = 0; horizPos < 8; horizPos++) {
-      switch (horizPos) {
-        case 0:
-          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber) return true;
-          break;
-        case 1:
-          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber + BRICKS_IN_ROW - 1
-            || enemyCarNoseSeqNumber === playerCarNoseSeqNumber + BRICKS_IN_ROW + 1) return true;
-          break;
-        default:
-          if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber + horizPos * BRICKS_IN_ROW - 2
-            || enemyCarNoseSeqNumber === playerCarNoseSeqNumber + horizPos * BRICKS_IN_ROW + 2) return true;
-          break;
-      }
+    if (Game.enemiesCars[0].isCarPassed()) {
+      console.log('PASSED');
+      this.incrGoals();
     }
-    return false;
+    Game.counter++;
+    console.log(Game.counter);
+    if (Game.counter % 10 === 0) {
+      this.addEnemy();
+    }
   }
 
   addEnemy() {
-    const enemy = new EnemyCar({ x: 3, y: 0 });
-    Game.enemiesCars.push(enemy);
+    if (Game.enemiesCars.length <= 2) {
+      let enemy;
+      if (Game.enemiesCars.length === 0) {
+        enemy = new EnemyCar({ x: 3, y: ENEMY_CAR_START_X_COODR });
+      } else {
+        const lastEnemy = Game.enemiesCars[Game.enemiesCars.length - 1];
+        let backCoord1X = 0;
+        do {
+          backCoord1X = EnemyCar.getRandXBackCoord();
+        } while (lastEnemy.canBeAdded(backCoord1X));
+        enemy = new EnemyCar({ x: backCoord1X, y: ENEMY_CAR_START_X_COODR });
+      }
+    }
   }
 
   incrGoals() {
@@ -307,7 +408,7 @@ class Game {
 
   incrSpeed() {
     this.level.speed -= SPEED_FRACTION;
-    this.intervalId = setInterval(this.moveEnemies, this.level.speed);
+    Game.speedInterval = setInterval(this.moveEnemies.bind(this), this.level.speed);
   }
 
   incrScore() {
@@ -344,53 +445,18 @@ class Game {
     this.refreshScore();
     this.clearEnemies();
     this.setPlayerToStart();
+    Game.phase = PLAYING_PHASE;
+    actionButton.innerText = PAUSE;
+    gameField.classList.remove(GAME_OVER_COVER_CLASS);
+    this.addEnemy();
+    Game.speedInterval = setInterval(this.moveEnemies.bind(this), this.level.speed);
   }
 
-  over() {
-    let modal = Modal.getModel();
-    modal.setHeaderText('Game over');
-    modal.setBodyText('Wy dont we play again?');
-    modal.display();
-  }
-}
-
-/* MODAL */
-
-class Modal {
-  constructor() {
-    this.modal = document.querySelector('.modal');
-    this.closeModalBtn = document.querySelector('.close');
-    this.modalHeader = document.querySelector('.modal__header');
-    this.modalText = document.querySelector('.modal-body__p');
-
-    this.closeModalBtn.onclick = () => {
-      this.hide();
-    };
-
-    window.onclick = event => {
-      if (event.target === this.modal) {
-        this.hide();
-      }
-    }
-  }
-
-  set setHeaderText (text) {
-    this.modalHeader.innerHTML = text;
-  }
-
-  set setBodyText (text) {
-    this.modalText.innerHTML = text;
-  }
-
-  static get getModel() {
-    return this;
-  }
-
-  display() {
-    this.modal.style.display = 'block';
-  }
-
-  hide() {
-    this.modal.display = 'none';
+  static over() {
+    clearInterval(Game.speedInterval);
+    gameField.classList.add(GAME_OVER_COVER_CLASS);
+    actionButton.innerText = TRY_AGAIN;
+    Game.phase = DEFEATED_PHASE;
+    Game.counter = 0;
   }
 }
