@@ -69,13 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
   levelScore.innerText = GOALS;
 
   document.addEventListener('keydown', ({ code }) => {
-    switch (code) {
-      case 'KeyA':
-        game.playerCar.shiftLeft();
-        break;
-      case 'KeyD':
-        game.playerCar.shiftRight();
-        break;
+    if (code === 'ArrowLeft' || code === 'KeyA') {
+      game.playerCar.shiftLeft();
+    } else if (code === 'ArrowRight' || code === 'KeyD') {
+      game.playerCar.shiftRight();
     }
   });
 
@@ -95,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
     }
   });
-  
+
   volumeIcon.addEventListener('click', () => {
     if (game.audio.paused) {
       game.audio.play();
