@@ -3,12 +3,17 @@ const BRICKS_NUMBER = 200;
 const BRICKS_IN_ROW = 10;
 const BRICKS_IN_COLUMN = 20;
 const BRICKS_IN_CAR = 7;
-const GOALS = 50;
-const START_SPEED = 500;
+const GOALS = 10;
+const START_SPEED = 600;
 const SPEED_FRACTION = 50;
 const PLAYER_CAR_START_X_COORD = 6;
+const ENEMY_CAR_START_X_COORD = 3;
 const CAR_WIDTH = 3;
-const ENEMY_CAR_START_X_COODR = -3;
+const CAR_LENGTH = 4;
+const ENEMY_CAR_START_Y_COORD = -3;
+const ENEMIES_ON_FIELD = 3;
+const OFFSET_ENEMY_BACK_Y_COORD = 19;
+const OFFSET_ENEMY_NOSE = 22;
 
 // car constants
 const DIRECT_DOWN = 'down';
@@ -33,6 +38,17 @@ const GAME_OVER_COVER_CLASS = 'game-field--covered';
 // dom elements
 const gameField = document.querySelector('.game-field');
 const actionButton = document.querySelector('.action-btn');
+const volumeIcon = document.querySelector('.fas');
+const gameStatisticsElements = {
+  score: document.querySelector('#score'),
+  hiScore: document.querySelector('#hi-score'),
+  speed: document.querySelector('#speed'),
+  goals: document.querySelector('#goals')
+};
+const levelScore = document.querySelector('#level-goals');
+
+// more
+const HI_SCORE = 'hiScore';
 
 const barrier = [0, 10, 20, 40, 50, 60, 80, 90, 100, 120, 130, 140, 160, 170, 180, 9, 19, 29, 49, 59, 69, 89, 99, 109, 129, 139, 149, 169, 179, 189];
 
@@ -50,14 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   let game = new Game();
+  levelScore.innerText = GOALS;
 
   document.addEventListener('keydown', ({ code }) => {
     switch (code) {
       case 'KeyA':
-        game.player.shiftLeft();
+        game.playerCar.shiftLeft();
         break;
       case 'KeyD':
-        game.player.shiftRight();
+        game.playerCar.shiftRight();
         break;
     }
   });
@@ -78,6 +95,18 @@ document.addEventListener('DOMContentLoaded', () => {
         break;
     }
   });
+  
+  volumeIcon.addEventListener('click', () => {
+    if (game.audio.paused) {
+      game.audio.play();
+      volumeIcon.classList.remove('fa-volume-off');
+      volumeIcon.classList.add('fa-volume-up');
+    } else {
+      game.audio.pause();
+      volumeIcon.classList.remove('fa-volume-up');
+      volumeIcon.classList.add('fa-volume-off');
+    }
+  })
 });
 
 /*
@@ -92,6 +121,12 @@ brick,enemy     player       DIRECT_DOWN
   front           back           1 1
                                  1 1
 */
+
+const initAudio = () => {
+  let audio = new Audio('sound/teriyaki_boyz_tokyo_drift.mp3');
+  audio.loop = true;
+  return audio;
+};
 
 const calcCoord = (direction, backCoord1) => { // { x: 6, y: 20 }
   let res = [];
@@ -132,7 +167,6 @@ class Brick extends Rectangle {
   constructor(element, seqNumber) {
     super(...getCoordsBySeqNumber(seqNumber));
     this.element = element;
-    this.seqNumber = seqNumber;
   }
 
   static getSeqNumberByBackCoord(backCoord1) {
@@ -229,17 +263,17 @@ class PlayerCar extends Car {
     if (this.backCoord2.x > 2 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
       if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() - 1)) {
         this.eraseCar();
-        this.frontCoord1.x -= 1;
-        this.frontCoord2.x -= 1;
-        this.backCoord1.x -= 1;
-        this.backCoord2.x -= 1;
+        this.frontCoord1.x--;
+        this.frontCoord2.x--;
+        this.backCoord1.x--;
+        this.backCoord2.x--;
         this.drawCar();
       }
     }
   }
 
   shiftRight() {
-    if (this.backCoord1.x < 9 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
+    if (this.backCoord1.x < BRICKS_IN_ROW - 1 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
       if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() + 1)) {
         this.eraseCar();
         this.frontCoord1.x++;
@@ -258,7 +292,7 @@ class PlayerCar extends Car {
   isCarCrashed(enemyCar, noseSeqNumber) {
     const enemyCarNoseSeqNumber = enemyCar.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
     const playerCarNoseSeqNumber = noseSeqNumber;
-    for (let horizPos = 0; horizPos < 8; horizPos++) {
+    for (let horizPos = 0; horizPos < CAR_LENGTH * 2; horizPos++) {
       switch (horizPos) {
         case 0:
           if (enemyCarNoseSeqNumber === playerCarNoseSeqNumber) {
@@ -286,22 +320,19 @@ class PlayerCar extends Car {
   }
 }
 
-class EnemyCar extends Car { // player
+class EnemyCar extends Car {
   constructor(backCoord1) {
     super(...calcCoord(DIRECT_UP, backCoord1), DIRECT_UP);
     super.drawCar();
-    Game.enemiesCars.push(this);
   }
 
   shiftUp() {
     this.eraseCar();
-    if (this.backCoord1.y > 19) {
-      Game.enemiesCars.shift();
-    } else {
-      this.frontCoord1.y += 1;
-      this.frontCoord2.y += 1;
-      this.backCoord1.y += 1;
-      this.backCoord2.y += 1;
+    if (this.backCoord1.y <= OFFSET_ENEMY_BACK_Y_COORD) {
+      this.frontCoord1.y++;
+      this.frontCoord2.y++;
+      this.backCoord1.y++;
+      this.backCoord2.y++;
       this.drawCar();
     }
   }
@@ -316,11 +347,11 @@ class EnemyCar extends Car { // player
 
   isCarPassed() {
     const enemyCarNoseSeqNumber = this.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    return Math.floor(enemyCarNoseSeqNumber / 10) > 22;
+    return Math.floor(enemyCarNoseSeqNumber / 10) > OFFSET_ENEMY_NOSE;
   }
 
   static getRandXBackCoord() {
-    return Math.floor(Math.random() * Math.floor(6)) + 1;
+    return Math.floor(Math.random() * Math.floor(BRICKS_IN_ROW - CAR_WIDTH - 1)) + 1;
   }
 }
 
@@ -331,7 +362,7 @@ class Game {
   static speedInterval;
 
   constructor() {
-    this.player = new PlayerCar(PLAYER_CAR_START_X_COORD);
+    this.playerCar = new PlayerCar(PLAYER_CAR_START_X_COORD);
     this.level = {
       speed: START_SPEED,
       goals: 0,
@@ -339,9 +370,25 @@ class Game {
     };
     this.score = {
       playerScore: 0,
-      highScore: 0
+      highScore: this.initScore()
     };
+    this.initStatistics();
+    this.audio = initAudio();
   }
+
+  initStatistics = () => {
+    let { score, hiScore, goals, speed } = gameStatisticsElements;
+    [score.innerText, hiScore.innerText, goals.innerText, speed.innerText] = ['0', this.score.highScore, '0', '0'];
+  };
+
+  initScore = () => {
+    if (localStorage.getItem(HI_SCORE)) {
+      return localStorage.getItem(HI_SCORE);
+    } else {
+      localStorage.setItem(HI_SCORE, '0');
+      return 0;
+    }
+  };
 
   start() {
     this.addEnemy();
@@ -361,37 +408,42 @@ class Game {
   }
 
   moveEnemies() {
-    if (this.player.isCarCrashed(Game.enemiesCars[0], this.player.getNoseSeqNumber() - 10)) {
+    if (this.playerCar.isCarCrashed(Game.enemiesCars[0], this.playerCar.getNoseSeqNumber() - 10)) {
       return;
     }
     for (let carInd = 0; carInd < Game.enemiesCars.length; carInd++) {
       Game.enemiesCars[carInd].shiftUp();
-      console.log('shifted');
     }
     if (Game.enemiesCars[0].isCarPassed()) {
-      console.log('PASSED');
+      Game.enemiesCars.shift();
       this.incrGoals();
     }
     Game.counter++;
-    console.log(Game.counter);
     if (Game.counter % 10 === 0) {
       this.addEnemy();
     }
   }
 
   addEnemy() {
-    if (Game.enemiesCars.length <= 2) {
+    if (Game.enemiesCars.length <= ENEMIES_ON_FIELD - 1) {
       let enemy;
       if (Game.enemiesCars.length === 0) {
-        enemy = new EnemyCar({ x: 3, y: ENEMY_CAR_START_X_COODR });
+        enemy = new EnemyCar({
+          x: ENEMY_CAR_START_X_COORD,
+          y: ENEMY_CAR_START_Y_COORD
+        });
       } else {
         const lastEnemy = Game.enemiesCars[Game.enemiesCars.length - 1];
         let backCoord1X = 0;
         do {
           backCoord1X = EnemyCar.getRandXBackCoord();
         } while (lastEnemy.canBeAdded(backCoord1X));
-        enemy = new EnemyCar({ x: backCoord1X, y: ENEMY_CAR_START_X_COODR });
+        enemy = new EnemyCar({
+          x: backCoord1X,
+          y: ENEMY_CAR_START_Y_COORD
+        });
       }
+      Game.enemiesCars.push(enemy);
     }
   }
 
@@ -402,20 +454,26 @@ class Game {
     } else {
       this.level.goals = 0;
       this.incrSpeed();
-      this.level.value++;
     }
+    gameStatisticsElements.goals.innerText = this.level.goals;
+    localStorage.setItem(HI_SCORE, this.score.highScore);
   }
 
   incrSpeed() {
     this.level.speed -= SPEED_FRACTION;
+    clearInterval(Game.speedInterval);
     Game.speedInterval = setInterval(this.moveEnemies.bind(this), this.level.speed);
+    this.level.value++;
+    gameStatisticsElements.speed.innerText = this.level.value;
   }
 
   incrScore() {
     this.score.playerScore++;
     if (this.score.playerScore > this.score.highScore) {
       this.score.highScore++;
+      gameStatisticsElements.hiScore.innerText = this.score.highScore;
     }
+    gameStatisticsElements.score.innerText = this.score.playerScore;
   }
 
   refreshLevel() {
@@ -436,8 +494,8 @@ class Game {
   }
 
   setPlayerToStart() {
-    this.player.eraseCar();
-    this.player = new PlayerCar(PLAYER_CAR_START_X_COORD);
+    this.playerCar.eraseCar();
+    this.playerCar = new PlayerCar(PLAYER_CAR_START_X_COORD);
   }
 
   restart() {
@@ -445,6 +503,7 @@ class Game {
     this.refreshScore();
     this.clearEnemies();
     this.setPlayerToStart();
+    this.initStatistics();
     Game.phase = PLAYING_PHASE;
     actionButton.innerText = PAUSE;
     gameField.classList.remove(GAME_OVER_COVER_CLASS);

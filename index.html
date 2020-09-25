@@ -9,6 +9,10 @@
 
     <!--font-->
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <!--icons-->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.14.0/css/solid.css" integrity="sha384-TN9eFVoW87zV3Q7PfVXNZFuCwsmMwkuOTOUsyESfMS9uwDTf7yrxXH78rsXT3xf0" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.14.0/css/fontawesome.css" integrity="sha384-PRy/NDAXVTUcXlWA3voA+JO/UMtzWgsYuwMxjuu6DfFPgzJpciUiPwgsvp48fl3p" crossorigin="anonymous">
 </head>
 <body>
 <section class="scene">
@@ -19,28 +23,29 @@
                 <div class="info-box">
                     <div class="scene__header">
                         <h1>CAR RACE</h1>
+                        <i class="fas fa-volume-off"></i>
                     </div>
                 </div>
                 <div class="info-box">
                     <h4 class="info-box__header">Score</h4>
-                    <p class="info-box__value">200</p>
+                    <p id="score" class="info-box__value"></p>
                 </div>
                 <div class="info-box">
-                    <h4 class="info-box__header">Max score</h4>
-                    <p class="info-box__value">500</p>
+                    <h4 class="info-box__header">Hi-Score</h4>
+                    <p id="hi-score" class="info-box__value"></p>
                 </div>
             </div>
             <div class="side-panel__general-info">
                 <div class="info-box">
                     <h4 class="info-box__header">Speed</h4>
-                    <p class="info-box__value">0</p>
+                    <p id="speed" class="info-box__value"></p>
                 </div>
                 <div class="info-box">
                     <h4 class="info-box__header">Goal</h4>
                     <p class="info-box__value">
-                        <span class="value-left">2</span>
+                        <span id="goals" class="value-left"></span>
                         /
-                        <span class="value-right">50</span>
+                        <span id="level-goals" class="value-right"></span>
                     </p>
                 </div>
             </div>
@@ -54,7 +59,6 @@
         </div>
     </div>
 </section>
-
 <script src="js/app.js"></script>
 </body>
 </html>
