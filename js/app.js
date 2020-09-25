@@ -128,7 +128,7 @@ const initAudio = () => {
   return audio;
 };
 
-const calcCoord = (direction, backCoord1) => { // { x: 6, y: 20 }
+const calcCoords = (direction, backCoord1) => { // { x: 6, y: 20 }
   let res = [];
   let backCoord2 = {
     x: direction === DIRECT_DOWN ? backCoord1.x - 2 : backCoord1.x + 2,
@@ -151,7 +151,7 @@ const getCoordsBySeqNumber = seqNumber => {
     x: seqNumber % BRICKS_IN_ROW,
     y: Math.floor(seqNumber / BRICKS_IN_ROW),
   };
-  return calcCoord(DIRECT_DOWN, backCoord1);
+  return calcCoords(DIRECT_DOWN, backCoord1);
 };
 
 class Rectangle {
@@ -255,7 +255,7 @@ class Car extends Rectangle {
 
 class PlayerCar extends Car {
   constructor(backXCoord) {
-    super(...calcCoord(DIRECT_DOWN, { x: backXCoord, y: BRICKS_IN_COLUMN - 2 }), DIRECT_DOWN);
+    super(...calcCoords(DIRECT_DOWN, { x: backXCoord, y: BRICKS_IN_COLUMN - 2 }), DIRECT_DOWN);
     super.drawCar();
   }
 
@@ -322,7 +322,7 @@ class PlayerCar extends Car {
 
 class EnemyCar extends Car {
   constructor(backCoord1) {
-    super(...calcCoord(DIRECT_UP, backCoord1), DIRECT_UP);
+    super(...calcCoords(DIRECT_UP, backCoord1), DIRECT_UP);
     super.drawCar();
   }
 
