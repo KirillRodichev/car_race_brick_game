@@ -1,16 +1,14 @@
 // numbers
 const BRICKS_NUMBER = 200;
 const BRICKS_IN_ROW = 10;
-const BRICKS_IN_COLUMN = 20;
 const BRICKS_IN_CAR = 7;
 const GOALS = 10;
 const START_SPEED = 600;
-const SPEED_FRACTION = 50;
-const PLAYER_CAR_START_X_COORD = 6;
-const ENEMY_CAR_START_X_COORD = 3;
+const SPEED_FRACTION = 100;
+const PLAYER_CAR_START_BACK_SQE_NUM = 195;
+const ENEMY_CAR_START_BACK_SEQ_NUM = -40;
 const CAR_WIDTH = 3;
 const CAR_LENGTH = 4;
-const ENEMY_CAR_START_Y_COORD = -3;
 const ENEMIES_ON_FIELD = 3;
 const OFFSET_ENEMY_BACK_Y_COORD = 19;
 const OFFSET_ENEMY_NOSE = 22;
@@ -61,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (barrier.includes(seqNumber)) {
       brick.classList.add('brick_active');
     }
-    bricksArray.push(new Brick(brick, seqNumber));
+    bricksArray.push(new Brick(brick));
     gameField.appendChild(brick);
   }
 
@@ -125,55 +123,9 @@ const initAudio = () => {
   return audio;
 };
 
-const calcCoords = (direction, backCoord1) => { // { x: 6, y: 20 }
-  let res = [];
-  let backCoord2 = {
-    x: direction === DIRECT_DOWN ? backCoord1.x - 2 : backCoord1.x + 2,
-    y: backCoord1.y,
-  };
-  let frontCoord1 = {
-    x: backCoord1.x,
-    y: direction === DIRECT_DOWN ? backCoord1.y - 3 : backCoord1.y + 3,
-  };
-  let frontCoord2 = {
-    x: direction === DIRECT_DOWN ? backCoord1.x - 2 : backCoord1.x + 2,
-    y: direction === DIRECT_DOWN ? backCoord1.y - 3 : backCoord1.y + 3,
-  };
-  res.push(backCoord1, backCoord2, frontCoord1, frontCoord2);
-  return res;
-};
-
-const getCoordsBySeqNumber = seqNumber => {
-  const backCoord1 = {
-    x: seqNumber % BRICKS_IN_ROW,
-    y: Math.floor(seqNumber / BRICKS_IN_ROW),
-  };
-  return calcCoords(DIRECT_DOWN, backCoord1);
-};
-
-class Rectangle {
-  constructor(backCoord1, backCoord2, frontCoord1, frontCoord2) {
-    this.backCoord1 = backCoord1;
-    this.backCoord2 = backCoord2;
-    this.frontCoord1 = frontCoord1;
-    this.frontCoord2 = frontCoord2;
-  }
-}
-
-class Brick extends Rectangle {
-  constructor(element, seqNumber) {
-    super(...getCoordsBySeqNumber(seqNumber));
+class Brick {
+  constructor(element) {
     this.element = element;
-  }
-
-  static getSeqNumberByBackCoord(backCoord1) {
-    const { x, y } = backCoord1;
-    let seqNumber = 0;
-    for (let yCoord = 0; yCoord < Math.abs(y); yCoord++) {
-      seqNumber = y >= 0 ? seqNumber + BRICKS_IN_ROW : seqNumber - BRICKS_IN_ROW;
-    }
-    seqNumber += x;
-    return seqNumber;
   }
 
   setActive() {
@@ -190,9 +142,9 @@ class Brick extends Rectangle {
 
 }
 
-class Car extends Rectangle {
-  constructor(backCoord1, backCoord2, frontCoord1, frontCoord2, direction) {
-    super(backCoord1, backCoord2, frontCoord1, frontCoord2);
+class Car {
+  constructor(backBrickSeqNumber, direction) {
+    this.backBrickSeqNumber = backBrickSeqNumber;
     this.direction = direction;
     this.activeBricksSeqNumbers = this.getActiveBricksSeqNumber();
   }
@@ -219,64 +171,51 @@ class Car extends Rectangle {
 
   getActiveBricksSeqNumber() {
     let res = [];
-    let backLeftBrickSeqNumber;
-    const fillArray = seqNumber => {
-      res.push(seqNumber);
-      if (this.direction === DIRECT_UP) {
-        res.push(seqNumber + 2);
-        res.push(seqNumber + BRICKS_IN_ROW + 1);
-        res.push(seqNumber + BRICKS_IN_ROW * 2);
-        res.push(seqNumber + BRICKS_IN_ROW * 2 + 1);
-        res.push(seqNumber + BRICKS_IN_ROW * 2 + 2);
-        res.push(seqNumber + BRICKS_IN_ROW * 3 + 1);
-      } else {
-        res.push(seqNumber - 2);
-        res.push(seqNumber - BRICKS_IN_ROW - 1);
-        res.push(seqNumber - BRICKS_IN_ROW * 2);
-        res.push(seqNumber - BRICKS_IN_ROW * 2 - 1);
-        res.push(seqNumber - BRICKS_IN_ROW * 2 - 2);
-        res.push(seqNumber - BRICKS_IN_ROW * 3 - 1);
-      }
-    };
-    const brickBackCoord1 = this.direction === DIRECT_UP
-      ? this.backCoord1
-      : {
-        x: this.backCoord1.x - 1,
-        y: this.backCoord1.y + 1,
-      };
-    backLeftBrickSeqNumber = Brick.getSeqNumberByBackCoord(brickBackCoord1);
-    fillArray(backLeftBrickSeqNumber);
+    res.push(this.backBrickSeqNumber);
+    if (this.direction === DIRECT_UP) {
+      res.push(this.backBrickSeqNumber + 2);
+      res.push(this.backBrickSeqNumber + BRICKS_IN_ROW + 1);
+      res.push(this.backBrickSeqNumber + BRICKS_IN_ROW * 2);
+      res.push(this.backBrickSeqNumber + BRICKS_IN_ROW * 2 + 1);
+      res.push(this.backBrickSeqNumber + BRICKS_IN_ROW * 2 + 2);
+      res.push(this.backBrickSeqNumber + BRICKS_IN_ROW * 3 + 1);
+    } else {
+      res.push(this.backBrickSeqNumber - 2);
+      res.push(this.backBrickSeqNumber - BRICKS_IN_ROW - 1);
+      res.push(this.backBrickSeqNumber - BRICKS_IN_ROW * 2);
+      res.push(this.backBrickSeqNumber - BRICKS_IN_ROW * 2 - 1);
+      res.push(this.backBrickSeqNumber - BRICKS_IN_ROW * 2 - 2);
+      res.push(this.backBrickSeqNumber - BRICKS_IN_ROW * 3 - 1);
+    }
     return res;
   }
 }
 
 class PlayerCar extends Car {
-  constructor(backXCoord) {
-    super(...calcCoords(DIRECT_DOWN, { x: backXCoord, y: BRICKS_IN_COLUMN - 2 }), DIRECT_DOWN);
+  constructor(backBrickSeqNumber) {
+    super(backBrickSeqNumber, DIRECT_DOWN);
     super.drawCar();
   }
 
   shiftLeft() {
-    if (this.backCoord2.x > 2 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
+    if ((this.backBrickSeqNumber % BRICKS_IN_ROW) > 3
+      && Game.phase !== PAUSE_PHASE
+      && Game.phase !== INIT_PHASE) {
       if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() - 1)) {
         this.eraseCar();
-        this.frontCoord1.x--;
-        this.frontCoord2.x--;
-        this.backCoord1.x--;
-        this.backCoord2.x--;
+        this.backBrickSeqNumber--;
         this.drawCar();
       }
     }
   }
 
   shiftRight() {
-    if (this.backCoord1.x < BRICKS_IN_ROW - 1 && Game.phase !== PAUSE_PHASE && Game.phase !== INIT_PHASE) {
+    if ((this.backBrickSeqNumber % BRICKS_IN_ROW) < BRICKS_IN_ROW - 2
+      && Game.phase !== PAUSE_PHASE
+      && Game.phase !== INIT_PHASE) {
       if (!this.isCarCrashed(Game.enemiesCars[0], this.getNoseSeqNumber() + 1)) {
         this.eraseCar();
-        this.frontCoord1.x++;
-        this.frontCoord2.x++;
-        this.backCoord1.x++;
-        this.backCoord2.x++;
+        this.backBrickSeqNumber++;
         this.drawCar();
       }
     }
@@ -318,33 +257,30 @@ class PlayerCar extends Car {
 }
 
 class EnemyCar extends Car {
-  constructor(backCoord1) {
-    super(...calcCoords(DIRECT_UP, backCoord1), DIRECT_UP);
+  constructor(backBrickSeqNumber) {
+    super(backBrickSeqNumber, DIRECT_UP);
     super.drawCar();
   }
 
   shiftUp() {
     this.eraseCar();
-    if (this.backCoord1.y <= OFFSET_ENEMY_BACK_Y_COORD) {
-      this.frontCoord1.y++;
-      this.frontCoord2.y++;
-      this.backCoord1.y++;
-      this.backCoord2.y++;
+    if (Math.floor(this.backBrickSeqNumber / BRICKS_IN_ROW) <= OFFSET_ENEMY_BACK_Y_COORD) {
+      this.backBrickSeqNumber += BRICKS_IN_ROW;
       this.drawCar();
     }
   }
 
-  xDist(backCoord1X) {
-    return this.backCoord1.x - backCoord1X;
+  xDist(backBrickSeqNumber) {
+    return this.backBrickSeqNumber % BRICKS_IN_ROW - backBrickSeqNumber % BRICKS_IN_ROW;
   }
 
-  canBeAdded(backCoord1X) {
-    if (Math.abs(this.xDist(backCoord1X)) >= CAR_WIDTH) return true;
+  canBeAdded(backBrickSeqNumber) {
+    if (Math.abs(this.xDist(backBrickSeqNumber)) >= CAR_WIDTH) return true;
   }
 
   isCarPassed() {
     const enemyCarNoseSeqNumber = this.activeBricksSeqNumbers[BRICKS_IN_CAR - 1];
-    return Math.floor(enemyCarNoseSeqNumber / 10) > OFFSET_ENEMY_NOSE;
+    return Math.floor(enemyCarNoseSeqNumber / BRICKS_IN_ROW) > OFFSET_ENEMY_NOSE;
   }
 
   static getRandXBackCoord() {
@@ -359,7 +295,7 @@ class Game {
   static speedInterval;
 
   constructor() {
-    this.playerCar = new PlayerCar(PLAYER_CAR_START_X_COORD);
+    this.playerCar = new PlayerCar(PLAYER_CAR_START_BACK_SQE_NUM);
     this.level = {
       speed: START_SPEED,
       goals: 0,
@@ -405,7 +341,7 @@ class Game {
   }
 
   moveEnemies() {
-    if (this.playerCar.isCarCrashed(Game.enemiesCars[0], this.playerCar.getNoseSeqNumber() - 10)) {
+    if (this.playerCar.isCarCrashed(Game.enemiesCars[0], this.playerCar.getNoseSeqNumber() - BRICKS_IN_ROW)) {
       return;
     }
     for (let carInd = 0; carInd < Game.enemiesCars.length; carInd++) {
@@ -416,7 +352,7 @@ class Game {
       this.incrGoals();
     }
     Game.counter++;
-    if (Game.counter % 10 === 0) {
+    if (Game.counter % BRICKS_IN_ROW === 0) {
       this.addEnemy();
     }
   }
@@ -425,20 +361,14 @@ class Game {
     if (Game.enemiesCars.length <= ENEMIES_ON_FIELD - 1) {
       let enemy;
       if (Game.enemiesCars.length === 0) {
-        enemy = new EnemyCar({
-          x: ENEMY_CAR_START_X_COORD,
-          y: ENEMY_CAR_START_Y_COORD
-        });
+        enemy = new EnemyCar(ENEMY_CAR_START_BACK_SEQ_NUM + EnemyCar.getRandXBackCoord());
       } else {
         const lastEnemy = Game.enemiesCars[Game.enemiesCars.length - 1];
-        let backCoord1X = 0;
+        let backBrickSeqNumber = 0;
         do {
-          backCoord1X = EnemyCar.getRandXBackCoord();
-        } while (lastEnemy.canBeAdded(backCoord1X));
-        enemy = new EnemyCar({
-          x: backCoord1X,
-          y: ENEMY_CAR_START_Y_COORD
-        });
+          backBrickSeqNumber = EnemyCar.getRandXBackCoord();
+        } while (lastEnemy.canBeAdded(backBrickSeqNumber));
+        enemy = new EnemyCar(backBrickSeqNumber - 30);
       }
       Game.enemiesCars.push(enemy);
     }
@@ -492,7 +422,7 @@ class Game {
 
   setPlayerToStart() {
     this.playerCar.eraseCar();
-    this.playerCar = new PlayerCar(PLAYER_CAR_START_X_COORD);
+    this.playerCar = new PlayerCar(PLAYER_CAR_START_BACK_SQE_NUM);
   }
 
   restart() {
